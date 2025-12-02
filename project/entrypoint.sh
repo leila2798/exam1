@@ -2,7 +2,7 @@
 set -e
 
 echo "=== [backend] Waiting for Postgres at ${DATABASE_HOST}:${DATABASE_PORT} ==="
-
+# my custom healthcheck for Postgres
 python - <<EOF
 import os, time, psycopg2
 
@@ -28,7 +28,7 @@ else:
     raise SystemExit("ERROR: Database not available.")
 EOF
 
-
+# migration part
 echo "=== [backend] Running migrations ==="
 python manage.py migrate --noinput
 

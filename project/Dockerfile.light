@@ -1,0 +1,43 @@
+# builder
+FROM python:3.9 AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    rsync \
+    build-essential \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+# Install to /install (will be copied to final slim image)
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install gunicorn
+
+# runtime - based on slim
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Bring already-built wheels from FAT builder
+COPY --from=builder /install /usr/local
+
+# Copy source code 
+COPY manage.py .
+COPY gutendex/ ./gutendex/
+COPY books/ ./books/
+COPY catalog_files/ ./catalog_files/
+COPY static/ ./static/
+COPY entrypoint.sh ./entrypoint.sh
+
+RUN mkdir -p /app/static /app/media /app/staticfiles \
+    && chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
+
+
+
+# SIZE COMPARISON
+# gutendex-heavy:latest                                   42932dd3fd72        743MB          172MB        
+# gutendex-slim:latest                                    5fee7bdd1830        244MB         53.4MB        
