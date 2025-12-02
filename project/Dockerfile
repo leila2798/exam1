@@ -1,24 +1,20 @@
-#python 3.9-slim
 FROM python:3.9
 
-#no pyc generated 
-# ENV PYTHONDONTWRITEBYTECODE=1
-# see logs in stdout/stderr immediately
-ENV PYTHONUNBUFFERED=1
-
+# Set working directory
 WORKDIR /app
 
-# System deps for Postgres client libs (psycopg2, etc.)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install OS dependencies (rsync included by default in fat image, but add just in case)
+RUN apt-get update && apt-get install -y \
+    rsync \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements and install
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install gunicorn
 
-COPY ./requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
-
-# Copy only what we need (no `COPY . .`)
+# Copy application code
 COPY manage.py ./manage.py
 COPY gutendex/ ./gutendex/
 COPY books/ ./books/
@@ -26,7 +22,8 @@ COPY catalog_files/ ./catalog_files/
 COPY static/ ./static/
 COPY entrypoint.sh ./entrypoint.sh
 
-RUN mkdir -p /app/static /app/media \
-    && chmod +x /app/entrypoint.sh
+# Prepare static/media dirs + entrypoint executable
+RUN mkdir -p /app/static /app/media /app/staticfiles && \
+    chmod +x /app/entrypoint.sh
 
-CMD ["./entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]
