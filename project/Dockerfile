@@ -1,18 +1,17 @@
 FROM python:3.9
 
-# Set working directory
 WORKDIR /app
 
-# Install OS dependencies (rsync included by default in fat image, but add just in case)
-RUN apt-get update && apt-get install -y \
-    rsync \
+# rsync-related problems (updatecatalog)
+ RUN apt-get update && apt-get install -y rsync \  
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/requirements.txt
-RUN pip install gunicorn
+# for production should use gunicorn 
+# RUN pip install gunicorn
 
 # Copy application code
 COPY manage.py ./manage.py

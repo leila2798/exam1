@@ -2,7 +2,7 @@
 set -e
 
 echo "=== [backend] Waiting for Postgres at ${DATABASE_HOST}:${DATABASE_PORT} ==="
-# my custom healthcheck for Postgres
+# custom healthcheck for Postgres
 python - <<EOF
 import os, time, psycopg2
 
@@ -22,13 +22,13 @@ for i in range(30):
         print("DB is ready.")
         break
     except Exception:
-        print(f"DB not ready yet ({i}), retrying...", flush=True)
+        print("DB not ready yet ({i}), retrying...", flush=True)
         time.sleep(2)
 else:
     raise SystemExit("ERROR: Database not available.")
 EOF
 
-# migration part
+# manage.py commands [migration, catalog load, collectstatic, runserver]
 echo "=== [backend] Running migrations ==="
 python manage.py migrate --noinput
 
@@ -51,12 +51,10 @@ else:
     call_command("updatecatalog")
 EOF
 
-
 echo "=== [backend] Collecting static files ==="
 python manage.py collectstatic --noinput
 
-
-echo "=== [backend] Starting Gunicorn ==="
-exec gunicorn gutendex.wsgi:application \
-    --bind 0.0.0.0:8000 \
-    --workers 3
+HOST="${BIND_HOST:-0.0.0.0}"
+PORT="${BIND_PORT:-8000}"
+echo "=== [backend] Starting Django dev server on ${HOST}:${PORT} ==="
+python manage.py runserver "${HOST}:${PORT}"

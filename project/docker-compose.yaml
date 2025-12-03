@@ -5,7 +5,7 @@ services:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
+      - ./db/init:/docker-entrypoint-initdb.d   # database bootstrapping
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -19,13 +19,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - .env
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:${BIND_PORT}"
+    #ports:
+    #  - "8000:${BIND_PORT}"
     environment:
       DATABASE_URL: ${DATABASE_URL}
     volumes:
